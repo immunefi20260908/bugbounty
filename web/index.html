@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Blockchain Security Engineer / Solidity Developer のポートフォリオ。DeFi、スマートコントラクト、セキュリティ分析の実績を紹介します。"
+    />
+    <title>Sora Kato | Blockchain Security Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-glow"></div>
+    <header class="site-header">
+      <div class="container nav-bar">
+        <a href="#top" class="brand" aria-label="ホームへ戻る">
+          <span class="brand-mark">S</span>
+          <span class="brand-text">Sora Kato</span>
+        </a>
+        <nav class="main-nav" aria-label="メインナビゲーション">
+          <a href="#about">About</a>
+          <a href="#projects">Projects</a>
+          <a href="#skills">Skills</a>
+          <a href="#experience">Experience</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <a class="nav-cta" href="#contact">Hire Me</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero container">
+        <div class="hero-copy">
+          <p class="eyebrow">Blockchain Security Engineer / Solidity Developer</p>
+          <h1>
+            安全を前提に、<br />
+            <span>信頼されるWeb3をつくる</span>
+          </h1>
+          <p class="lead">
+            DeFi とスマートコントラクトの安全性を、攻撃シナリオとテストで検証するエンジニアです。
+            Solidity、Foundry、JPYCモックを使った実践ラボを通じて、脆弱性を再現し、読みやすい修正方針まで整理します。
+          </p>
+          <div class="cta-row">
+            <a class="primary-btn" href="#projects">View Projects</a>
+            <a class="secondary-btn" href="mailto:sora.kato.dev@example.com">Contact</a>
+          </div>
+          <ul class="stats-row" aria-label="実績サマリー">
+            <li><strong>9</strong><span>Foundry Tests Passing</span></li>
+            <li><strong>2</strong><span>Attack Scenarios</span></li>
+            <li><strong>1</strong><span>JPYC Security Lab</span></li>
+          </ul>
+        </div>
+
+        <div class="hero-panel">
+          <div class="profile-card">
+            <div class="card-top">
+              <div class="avatar-block">
+                <span>SK</span>
+              </div>
+              <div>
+                <p class="label">Currently focusing on</p>
+                <h2>DeFi Security</h2>
+              </div>
+            </div>
+
+            <div class="status-line">
+              <span class="status-dot"></span>
+                <span>Foundry tests · JPYC flows · smart contracts</span>
+            </div>
+
+            <div class="mini-grid">
+              <div>
+                <p>Core</p>
+                <strong>Solidity</strong>
+              </div>
+              <div>
+                <p>Tooling</p>
+                <strong>Foundry</strong>
+              </div>
+              <div>
+                <p>Auditing</p>
+                <strong>Reentrancy</strong>
+              </div>
+              <div>
+                <p>Stack</p>
+                <strong>JavaScript</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="trust-bar container" aria-label="技術領域">
+        <span>Solidity</span>
+        <span>EVM</span>
+        <span>Hardhat</span>
+        <span>DeFi</span>
+        <span>Security</span>
+        <span>Auditing</span>
+      </section>
+
+      <section id="about" class="container section-block">
+        <div class="section-heading">
+          <p class="eyebrow">About</p>
+          <h2>安全性と実装力を両方で勝負できるエンジニアです</h2>
+        </div>
+
+        <div class="about-grid">
+          <article class="glass-card narrative">
+            <p>
+              Web3 の世界では、コードが金銭価値を扱うため、攻撃観点と設計観点の両方が不可欠です。
+              私はスマートコントラクトの脆弱性を見つけるだけでなく、どうやって防ぐかを実装レベルで設計することを得意としています。
+            </p>
+            <p>
+              研究と開発を往復しながら、ユーザーが安心して使えるプロトコルと、開発者が保守しやすいコードを意識して取り組んでいます。
+              特に DeFi の再入攻撃、アクセス制御、資産フロー設計を重視しています。
+            </p>
+          </article>
+
+          <article class="glass-card metrics">
+            <div class="metric-item">
+              <span class="metric-label">Focus</span>
+              <strong>Smart contracts & protocol security</strong>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Approach</span>
+              <strong>Threat modeling + test-first development</strong>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Goal</span>
+              <strong>Build safe infrastructure for users</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="projects" class="container section-block">
+        <div class="section-heading split">
+          <div>
+            <p class="eyebrow">Featured Projects</p>
+            <h2>実務と学習の両方を反映した成果物</h2>
+          </div>
+          <div class="filter-group" aria-label="プロジェクトフィルター">
+            <button class="filter-btn is-active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="security">Security</button>
+            <button class="filter-btn" data-filter="frontend">Frontend</button>
+          </div>
+        </div>
+
+        <div id="projectGrid" class="project-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="skills" class="container section-block">
+        <div class="section-heading">
+          <p class="eyebrow">Skills</p>
+          <h2>実装から脆弱性分析まで幅広く対応</h2>
+        </div>
+
+        <div class="skill-grid">
+          <article class="skill-card">
+            <h3>Smart Contract</h3>
+            <ul>
+              <li>Solidity / ERC20 / ERC721 / Access Control</li>
+              <li>Reentrancy / Overflow / Logic flaws review</li>
+              <li>Upgradeable patterns and governance design</li>
+            </ul>
+          </article>
+
+          <article class="skill-card">
+            <h3>Security Analysis</h3>
+            <ul>
+              <li>Threat modeling and risk assessment</li>
+              <li>Fuzzing / unit tests / edge-case review</li>
+              <li>Attack simulation and exploit walkthroughs</li>
+            </ul>
+          </article>
+
+          <article class="skill-card">
+            <h3>Development</h3>
+            <ul>
+              <li>Hardhat / JavaScript / Node.js</li>
+              <li>Frontend integration and wallet UX</li>
+              <li>Git workflow and technical documentation</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="experience" class="container section-block">
+        <div class="section-heading">
+          <p class="eyebrow">Career</p>
+          <h2>実務と学習を積み重ねてきた経歴</h2>
+        </div>
+
+        <div class="timeline">
+          <article class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <span class="time-tag">2024 - Present</span>
+              <h3>Security-focused Solidity learning lab</h3>
+              <p>
+                Reentrancy, access control, asset flow review をテーマにした研究室を作成し、攻撃と修正の再現を通して脆弱性を定着させました。
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <span class="time-tag">2023 - 2024</span>
+              <h3>Frontend + Web3 product prototyping</h3>
+              <p>
+                UI / UX とウォレット連携を含む Web3 サービスのプロトタイプを作成し、ユーザー体験とセキュリティ設計の両立を経験しました。
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <span class="time-tag">2021 - 2023</span>
+              <h3>Product engineering and iterative learning</h3>
+              <p>
+                フロントエンドとバックエンドの開発を通して、技術理解と改善サイクルの重要性を学び、複雑な要件を分解し実装する力を鍛えました。
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="contact" class="container section-block contact-wrap">
+        <div class="contact-card">
+          <div>
+            <p class="eyebrow">Contact</p>
+            <h2>一緒に安全なプロダクトをつくりませんか？</h2>
+          </div>
+          <div class="contact-actions">
+            <a class="primary-btn" href="mailto:sora.kato.dev@example.com">sora.kato.dev@example.com</a>
+            <button class="secondary-btn copy-btn" type="button">Copy Email</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <span>© <span id="year">2026</span> Sora Kato</span>
+        <span>Blockchain Security + Solidity Development</span>
+      </div>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
