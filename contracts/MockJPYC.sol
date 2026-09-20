@@ -18,5 +18,11 @@ contract MockJPYC is ERC20 {
     function mint(address to, uint256 amount) external {
         // 1. 指定された受取人へ新しい JPYC を発行する。
         _mint(to, amount);
+
+        // 発行権限の書き方のバリエーション:
+        // A. 現在の方式: external なら誰でも mint できる。テスト専用。
+        // B. onlyOwner: 管理者だけが mint できる。
+        // C. AccessControl: MINTER_ROLE を持つアドレスだけが mint できる。
+        // D. mint を外部公開せず、固定初期供給だけ constructor で _mint する。
     }
 }

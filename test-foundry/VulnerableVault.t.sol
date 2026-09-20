@@ -36,6 +36,11 @@ contract VulnerableVaultTest {
     // new はコントラクトをブロックチェーン上にデプロイし、返り値は新しいアドレスになる。
     // テストの基本形は「準備する -> 関数を呼ぶ -> 結果を require で検証する」。
     // require の条件が false になると、そのテストは失敗する。
+    // テストの書き方のバリエーション:
+    // A. 現在の方式: Solidity の require だけで検証する。
+    // B. forge-std/Test.sol の assertEq、assertTrue、vm.expectRevert を使う。
+    // C. Hardhat/JavaScript の expect(...).to.equal(...) で同じ状態を検証する。
+    // D. fuzz test で amount を自動生成し、境界値を広く確認する。
 
     // 目的: withdraw 中の再入呼び出しが最終的に revert することを確認する。
     // 成功条件: attack() の low-level call が false を返すこと。
@@ -124,6 +129,10 @@ contract VulnerableVaultTest {
             jpyc.balanceOf(address(this)) == beforeBalance + 1_000_000 ether,
             "mock JPYC mint did not increase balance"
         );
+
+        // 検証の書き方の例:
+        // assert(jpyc.balanceOf(address(this)) == beforeBalance + 1_000_000 ether);
+        // forge-std を使う場合は assertEq(actual, expected, "message") の方が差分を読みやすい。
     }
 
     // 目的: JPYC が Vault の入出金に使える ERC20 であることを確認する。

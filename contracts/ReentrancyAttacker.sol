@@ -36,6 +36,12 @@ contract ReentrancyAttacker {
         // approve の第2引数が、Vault に使わせる最大数量。
         // 1. Vault に depositAmount 分の使用許可を与える。
         token.approve(address(vault), depositAmount);
+
+        // 書き方のバリエーション:
+        // A. 必要量だけ approve する現在の方式。
+        // B. token.approve(address(vault), type(uint256).max) で無制限許可する方式。
+        //    便利だが、Vault が悪用されたときの被害が大きくなる。
+        // C. increaseAllowance / forceApprove を使い、既存 allowance を考慮する方式。
     }
 
     function attack() external {
@@ -73,6 +79,12 @@ contract ReentrancyAttacker {
             // 3. 残高更新前の Vault へ再び withdraw を呼ぶ。
             vault.withdraw(depositAmount);
         }
+
+        // callback の書き方のバリエーション:
+        // A. 現在のように関数シグネチャ文字列で呼び出す。
+        // B. interface IWithdrawCallback { function onVaultWithdraw(...) external; }
+        //    を定義し、IWithdrawCallback(msg.sender).onVaultWithdraw(...) と呼ぶ。
+        // C. callback 自体をなくし、Vault が直接送金する設計にする。
     }
 
     function onFlashLoan(address, uint256 amount, uint256 fee, bytes calldata) external {
@@ -81,6 +93,11 @@ contract ReentrancyAttacker {
         require(msg.sender == address(vault), "only vault callback");
         // 2. 元本と手数料を Vault へ返す。
         require(token.transfer(address(vault), amount + fee), "loan repayment failed");
+
+        // 返済方法のバリエーション:
+        // A. callback 内で transfer する現在の方式。
+        // B. 先に approve し、Vault が token.transferFrom(receiver, vault, amount + fee) を行う。
+        // C. ERC3156 の標準 callback と戻り値を使い、対応する lender/borrower にする。
     }
 
     function configure(uint256 nextAmount, uint256 nextMaxReentries) external {

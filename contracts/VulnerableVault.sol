@@ -48,6 +48,9 @@ contract VulnerableVault {
 
     // onlyOwner が付いた関数は owner だけ実行できる。
     // 変更例: 管理者を複数人にしたい場合は、この判定を AccessControl などに置き換える。
+    // 書き方の例1: modifier で共通チェックをまとめる（現在の書き方）。
+    // 書き方の例2: 関数内に require(msg.sender == owner, "not owner") を直接書く。
+    // 書き方の例3: OpenZeppelin Ownable を継承して onlyOwner を利用する。
     modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
         _;
@@ -55,6 +58,7 @@ contract VulnerableVault {
 
     // 一時停止中は入出金やフラッシュローンを止める。
     // 読み方: modifier は関数本体の前に実行される共通チェック。
+    // 書き方の例: OpenZeppelin Pausable を継承し、whenNotPaused を使う方法もある。
     modifier whenNotPaused() {
         require(!paused, "vault paused");
         _;
@@ -77,6 +81,14 @@ contract VulnerableVault {
         depositedAt[msg.sender] = block.timestamp;
         // 6. 入金イベントを記録する。
         emit Deposit(msg.sender, amount);
+
+        // 書き方のバリエーション:
+        // A. 現在の書き方: bool を返す ERC20 を require で確認する。
+        //    require(token.transferFrom(msg.sender, address(this), amount), "transfer failed");
+        // B. OpenZeppelin SafeERC20: 戻り値を返さない ERC20 にも対応しやすい。
+        //    using SafeERC20 for IERC20;
+        //    token.safeTransferFrom(msg.sender, address(this), amount);
+        // C. 内部処理を _deposit(msg.sender, amount) に分け、複数入口から再利用する。
     }
 
     function withdraw(uint256 amount) external whenNotPaused {
@@ -84,6 +96,10 @@ contract VulnerableVault {
         // 注意: 外部コールが残高更新より前にあるため、再入攻撃の学習用に脆弱な順序になっている。
         // 修正例: balances[msg.sender] と totalDeposits を外部コールより先に減らす
         //         (Checks-Effects-Interactions) または nonReentrant を使う。
+        // 書き方の比較:
+        // A. 現在の学習用コード: callback -> 送金 -> 残高更新。再入リスクがある。
+        // B. Checks-Effects-Interactions: 残高更新 -> callback/送金。通常はこちらを優先する。
+        // C. ReentrancyGuard: function withdraw(...) external nonReentrant を付ける。
         // 1. ユーザーの内部残高が十分か確認する。
         require(balances[msg.sender] >= amount, "insufficient balance");
         // 例: amount=1,000、feeBps=100 なら fee=10、利用者には990を送る。
@@ -114,6 +130,14 @@ contract VulnerableVault {
 
         // 9. 出金イベントを記録する。
         emit Withdraw(msg.sender, amount, fee);
+
+        // 安全な順番の例（実装を変更する場合の参考）:
+        // uint256 oldBalance = balances[msg.sender];
+        // balances[msg.sender] = oldBalance - amount;
+        // totalDeposits -= amount;
+        // token.safeTransfer(msg.sender, amount - fee);
+        // token.safeTransfer(feeRecipient, fee);
+        // callback が必要なら、状態更新後に呼び出す。
     }
 
     function setPaused(bool nextPaused) external onlyOwner {
@@ -145,6 +169,11 @@ contract VulnerableVault {
         // view は状態を変更しない読み取り専用関数。デバッグや画面表示に使える。
         // totalDeposits と一致するとは限らないため、実際のトークン保有量を別に確認できる。
         return token.balanceOf(address(this));
+
+        // 書き方の例:
+        // A. 外部 getter: function availableAssets() external view returns (uint256)
+        // B. public 状態変数: uint256 public totalAssets;
+        // C. ERC4626: totalAssets()、convertToShares() など標準の関数を使う。
     }
 
     function flashLoan(address receiver, uint256 amount, bytes calldata data)
@@ -153,6 +182,10 @@ contract VulnerableVault {
     {
         // flashLoan の流れ: 残高確認 -> 貸出 -> receiver の処理 -> 同一トランザクション内で返済確認。
         // 変更例: 利用者を限定する場合は receiver の許可リストを確認する処理を追加する。
+        // 書き方のバリエーション:
+        // A. receiver に callback を要求する現在の方式。
+        // B. receiver から返済用 approve を受け、Vault が transferFrom する方式。
+        // C. ERC3156 の IERC3156FlashLender / IERC3156FlashBorrower 標準に合わせる方式。
         // 1. 借り手アドレスが有効か確認する。
         require(receiver != address(0), "invalid receiver");
         // 2. 借入数量が0より大きいか確認する。
@@ -194,5 +227,10 @@ contract VulnerableVault {
         // 変更イベントはないため、本番では監視しやすいイベント追加も検討できる。
         // 2. 新しいフラッシュローン手数料を保存する。
         flashLoanFeeBps = feeBps;
+
+        // 書き方の例:
+        // A. bps を uint256 で保存する現在の方式。1,000 = 10%。
+        // B. 定数 DENOMINATOR = 10_000 を作り、計算式の意味を明確にする。
+        // C. 手数料を固定値にして、管理者変更をなくす。
     }
 }
