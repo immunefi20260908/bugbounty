@@ -201,3 +201,156 @@ forge test --match-test testJPYCReentrancyAttemptReverts -vvvv
 9 tests passed
 0 failed
 ```
+
+11. ファイルごとの担当を分ける
+-------------------------------
+
+1つのファイルにすべてを書くと読みにくくなるため、役割ごとに分ける。
+
+```text
+contracts/MockJPYC.sol
+	-> テスト用 ERC20。mint と残高管理を担当する。
+
+contracts/VulnerableVault.sol
+	-> deposit、withdraw、手数料、pause、flashLoan を担当する。
+
+contracts/ReentrancyAttacker.sol
+	-> Vault を呼ぶユーザーと、Vault の callback を担当する。
+
+test-foundry/VulnerableVault.t.sol
+	-> コントラクトを作り、成功・失敗・攻撃の結果を検証する。
+
+foundry.toml
+	-> Solidity のバージョン、ソース、テスト、依存関係を設定する。
+```
+
+読み始めるときは、通常 `test-foundry/VulnerableVault.t.sol` から入る。
+テストがどの関数を呼んでいるかを確認し、その関数の実装へ移動すると流れを追いやすい。
+
+12. Solidity の1行を読み解く
+-----------------------------
+
+例えば次の行を読む。
+
+```solidity
+require(balances[msg.sender] >= amount, "insufficient balance");
+```
+
+左から順番に意味を分ける。
+
+- `require`: 条件が false なら処理を中断して revert する
+- `balances`: ユーザーごとの内部残高を保存する mapping
+- `msg.sender`: 今この関数を呼んでいるアドレス
+- `amount`: 出金したい数量
+- 文字列: 条件が false のときのエラー説明
+
+つまり「呼び出し元の内部残高が出金額以上でなければ停止する」という意味。
+
+次の行も同じように読む。
+
+```solidity
+uint256 fee = (amount * withdrawalFeeBps) / 10_000;
+```
+
+- `uint256`: 小数を持たない正の整数
+- `withdrawalFeeBps`: 手数料を1/10,000単位で保存する値
+- `100 bps`: 1%
+- `10_000 bps`: 100%
+
+例として `amount = 1,000 ether`、`withdrawalFeeBps = 100` なら、
+`fee = 10 ether` になる。
+
+13. msg.sender と address(this) を区別する
+-------------------------------------------
+
+コントラクトを読むとき、アドレスの意味を毎回確認する。
+
+```solidity
+token.mint(address(user), amount);
+```
+
+これは `user` コントラクトへトークンを配る。
+
+```solidity
+token.balanceOf(address(this));
+```
+
+これは、現在のテストコントラクト自身の残高を読む。
+
+Vault の関数内では、通常 `msg.sender` は Vault を呼んだ利用者になる。
+しかし、`ReentrancyAttacker` が Vault を呼んだ場合、Vault から見た `msg.sender` は攻撃者コントラクトになる。
+この違いを理解すると、なぜ callback が攻撃に使えるのか分かる。
+
+14. approve と transferFrom を順番に読む
+------------------------------------------
+
+ERC20 の入金は、通常2段階で行う。
+
+```text
+1. user -> token.approve(Vault, amount)
+2. user -> Vault.deposit(amount)
+3. Vault -> token.transferFrom(user, Vault, amount)
+```
+
+`approve` は「Vault が使ってよい上限」を設定するだけで、まだトークンは移動しない。
+実際の移動は Vault 内の `transferFrom` で発生する。
+
+`approve` がない、または上限が不足していると `transferFrom` が失敗する。
+そのためテストでは、残高を配るだけでなく `prepare()` も呼ぶ必要がある。
+
+15. low-level call を使う理由
+-----------------------------
+
+失敗することをテストしたい場合、直接呼び出すとテスト関数自身も revert する。
+
+```solidity
+(bool success, ) = address(attacker).call(
+		abi.encodeWithSignature("attack()")
+);
+require(!success, "attack should revert");
+```
+
+この書き方では、呼び出しの結果を `success` で受け取れる。
+
+- `success == true`: 呼び出しが成功した
+- `success == false`: 呼び出しが revert した
+
+そのため、再入攻撃や pause 中の操作など「失敗することが正しい」テストに使える。
+
+16. 失敗したときの調査手順
+---------------------------
+
+テストが失敗したら、すぐに値を変更せず、次の順番で調べる。
+
+```text
+1. どのテストが失敗したか確認する
+2. エラーメッセージを読む
+3. amount、fee、残高、設定値を確認する
+4. 関数の呼び出し順を確認する
+5. 必要なら -vvvv で trace を見る
+6. 原因を1つに絞ってから修正する
+```
+
+例えば手数料テストが失敗した場合は、次を確認する。
+
+- feeBps が意図した値か
+- `amount / 100` と実際の計算が一致しているか
+- feeRecipient が想定アドレスか
+- receiver の借入額とテストの `amount` が一致しているか
+
+17. ポートフォリオで説明するときの順番
+----------------------------------------
+
+採用担当者や他の開発者へ説明するときは、コードを全部見せる前に要点を伝える。
+
+```text
+1. 何を作ったか
+2. どの脆弱性を対象にしたか
+3. どういう攻撃シナリオを再現したか
+4. どのテストで確認したか
+5. 本番ならどう修正するか
+```
+
+このプロジェクトの説明例:
+
+「JPYC 風の ERC20 を Vault に接続し、再入攻撃、フラッシュローン、停止状態、手数料上限を Foundry でテストしました。特に withdraw の外部 callback が内部残高更新より前に実行されるため、Checks-Effects-Interactions または ReentrancyGuard が必要だと確認しました。」
