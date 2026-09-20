@@ -54,6 +54,8 @@ forge test -vv
 
 より詳しい読み方、数量計算、コール順序、再入攻撃の説明は [docs/JPYC_FOUNDRY_GUIDE.md](docs/JPYC_FOUNDRY_GUIDE.md) を参照してください。
 
+実装の順番を最初から追いたい場合は [コードを書く順番](%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92%E6%9B%B8%E3%81%8F%E9%A0%86%E7%95%AA) を参照してください。
+
 ## Preview the portfolio locally
 
 From the project root:

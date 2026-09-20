@@ -1,0 +1,203 @@
+コードを書く順番
+================
+
+このプロジェクトでは、いきなりコードを書くのではなく、次の順番で進める。
+
+1. 目的を決める
+---------------
+
+最初に「何を作るか」と「何ができたら完成か」を決める。
+
+今回の例:
+
+- JPYC のような ERC20 を Vault に預けられるようにする
+- 預けた数量をユーザーごとに記録する
+- 出金時に手数料を計算する
+- フラッシュローンの元本と手数料を同じトランザクションで返済させる
+- 再入攻撃や停止中の操作をテストする
+
+完成条件が先にあると、必要な状態変数とテストを決めやすい。
+
+2. 登場人物と資産の流れを整理する
+--------------------------------
+
+誰が誰を呼び、トークンがどこへ移動するかを書く。
+
+今回の登場人物:
+
+- `MockJPYC`: テスト用の ERC20 トークン
+- `VulnerableVault`: JPYC を預かるコントラクト
+- `ReentrancyAttacker`: 通常ユーザーと攻撃用 callback を兼ねるコントラクト
+- `VulnerableVaultTest`: コントラクトを作って結果を確認するテスト
+
+通常の入金:
+
+```text
+user --approve--> Vault
+user --transferFrom(amount)--> Vault
+Vault の内部 balances[user] += amount
+```
+
+通常の出金:
+
+```text
+user --withdraw(amount)--> Vault
+Vault --amount - fee--> user
+Vault --fee--> feeRecipient
+Vault の内部 balances[user] -= amount
+```
+
+3. 脅威モデルを作る
+--------------------
+
+次の質問に答える。
+
+- 外部ユーザーはどの関数を呼べるか
+- 管理者だけが呼べる関数は何か
+- 外部コントラクトが callback を返せる場所はどこか
+- 残高を更新する前にトークン送付や外部 call をしていないか
+- 手数料や数量の上限を超えられないか
+- 一時停止中にも資金操作できないか
+
+今回の重要な発見:
+
+`withdraw` は、内部残高を減らす前に `msg.sender` へ callback を呼ぶ。
+そのため、悪意あるコントラクトは callback の中からもう一度 `withdraw` を呼べる。
+
+```text
+withdraw
+	-> onVaultWithdraw callback
+		 -> withdraw（再入）
+	-> token.transfer
+	-> balances を減らす
+```
+
+4. 状態変数と不変条件を決める
+------------------------------
+
+状態変数は、後から何を検証したいかを考えて決める。
+
+- `balances[user]`: ユーザーの Vault 内部残高
+- `totalDeposits`: 全ユーザーの内部残高の合計
+- `depositedAt[user]`: 最後の入金時刻
+- `feeRecipient`: 手数料の送付先
+- `paused`: 緊急停止状態
+
+不変条件の例:
+
+- `balances[user]` はユーザーが出金できる量を超えない
+- `totalDeposits` は入金で増え、出金で減る
+- flash loan 後の実トークン残高は貸出前以上になる
+- `feeBps` は決めた上限以下である
+- `paused == true` の間は対象関数を実行できない
+
+5. 最小の正常系を書く
+----------------------
+
+最初から攻撃対策を全部入れるのではなく、まず正常な資金フローを小さく通す。
+
+```text
+1. MockJPYC を deploy
+2. Vault に MockJPYC のアドレスを渡して deploy
+3. user に JPYC を mint
+4. user が Vault に approve
+5. deposit
+6. withdraw
+7. balances と totalDeposits を確認
+```
+
+数量の例:
+
+```text
+開始: user=1,000 JPYC、Vault=0、内部残高=0
+入金後: user=0 JPYC、Vault=1,000、内部残高=1,000
+出金後: user=1,000 JPYC、Vault=0、内部残高=0
+```
+
+6. 失敗する条件を書く
+----------------------
+
+正常系だけでは安全性を確認できない。`require` が失敗する条件もテストする。
+
+- 0 JPYC の入金
+- 残高以上の出金
+- 0 アドレスへの手数料送付
+- 出金手数料が1,000 bpsを超える設定
+- フラッシュローン手数料が500 bpsを超える設定
+- `paused == true` の状態での入金
+- `paused == true` の状態でのフラッシュローン
+- 元本と手数料が返済されないフラッシュローン
+
+7. 攻撃シナリオを書く
+----------------------
+
+攻撃者を通常ユーザーとして扱い、悪意ある callback を追加する。
+
+再入攻撃の流れ:
+
+```text
+attacker.attack()
+	-> vault.deposit(10 JPYC)
+	-> vault.withdraw(10 JPYC)
+	-> attacker.onVaultWithdraw()
+	-> vault.withdraw(10 JPYC)  // 残高更新前の再入
+```
+
+今回のテストでは、最後に算術エラーが発生してトランザクション全体が revert する。
+これは「攻撃を検出できた」という意味であり、脆弱な設計を安全に修正できたという意味ではない。
+本番コードでは Checks-Effects-Interactions または `ReentrancyGuard` を検討する。
+
+8. JPYC モックの危険性を分けて考える
+--------------------------------------
+
+`MockJPYC.mint` は学習用なので誰でも呼べる。
+これは実際の JPYC の発行権限を表していない。
+
+```solidity
+function mint(address to, uint256 amount) external {
+		_mint(to, amount);
+}
+```
+
+この実装では、誰でも残高を作れるため、テストの「錬金術」が成立する。
+本番用なら `onlyOwner`、`AccessControl`、発行上限、イベント、権限管理を検討する。
+
+9. Foundry で実行する
+---------------------
+
+プロジェクトのルートで実行する。
+
+```powershell
+forge build
+forge test
+forge test -vv
+forge test --match-test testJPYCReentrancyAttemptReverts -vvvv
+```
+
+- `forge build`: コンパイルだけ行う
+- `forge test`: 全テストを実行する
+- `-vv`: テストの詳細を表示する
+- `-vvvv`: 外部 call を含むトレースを表示する
+- `--match-test`: テスト名を絞る
+
+現在のテストは、正常系、JPYC、停止、手数料上限、フラッシュローン、再入攻撃を含む9件。
+
+10. 修正後に全テストを再実行する
+---------------------------------
+
+1つのテストだけ通して終わらず、最後に全テストを実行する。
+
+```text
+修正する
+	-> forge build
+	-> forge test -vv
+	-> 失敗したテストの原因を読む
+	-> 必要なら修正して再実行する
+```
+
+今回の確認結果:
+
+```text
+9 tests passed
+0 failed
+```
