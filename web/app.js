@@ -27,7 +27,6 @@
 
 const projectGrid = document.querySelector('#projectGrid');
 const filterButtons = document.querySelectorAll('.filter-btn');
-const copyButton = document.querySelector('.copy-btn');
 const yearNode = document.querySelector('#year');
 
 if (yearNode) {
@@ -64,24 +63,5 @@ filterButtons.forEach((button) => {
     renderProjects(button.dataset.filter);
   });
 });
-
-if (copyButton) {
-  copyButton.addEventListener('click', async () => {
-    const email = 'sora.kato.dev@example.com';
-
-    try {
-      await navigator.clipboard.writeText(email);
-      copyButton.textContent = 'Copied!';
-      setTimeout(() => {
-        copyButton.textContent = 'Copy Email';
-      }, 1600);
-    } catch (error) {
-      copyButton.textContent = 'Copy failed';
-      setTimeout(() => {
-        copyButton.textContent = 'Copy Email';
-      }, 1600);
-    }
-  });
-}
 
 renderProjects();
