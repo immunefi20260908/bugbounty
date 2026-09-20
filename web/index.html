@@ -28,6 +28,7 @@
           <a href="#about">About</a>
           <a href="#projects">Projects</a>
           <a href="#skills">Skills</a>
+          <a href="#method">Method</a>
           <a href="#experience">Experience</a>
           <a href="#contact">Contact</a>
         </nav>
@@ -189,6 +190,41 @@
               <li>Frontend integration and wallet UX</li>
               <li>Git workflow and technical documentation</li>
             </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="method" class="container section-block">
+        <div class="section-heading">
+          <p class="eyebrow">How I Work</p>
+          <h2>コードを書く順番を、検証できる形にする</h2>
+        </div>
+
+        <div class="method-grid">
+          <article class="method-card">
+            <span class="method-number">01</span>
+            <h3>Threat model</h3>
+            <p>誰が、どの資産に、どの入口から影響を与えられるかを先に整理します。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">02</span>
+            <h3>State design</h3>
+            <p>balances、手数料、権限など、更新される状態と期待する不変条件を定義します。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">03</span>
+            <h3>Happy path</h3>
+            <p>まず deposit、withdraw、flash loan の正常な資金フローを最小コードで通します。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">04</span>
+            <h3>Attack tests</h3>
+            <p>再入、停止中の呼び出し、手数料上限など、失敗すべき境界条件をテストします。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">05</span>
+            <h3>Fix and rerun</h3>
+            <p>原因を小さく修正し、Foundry の全テストを再実行して安全性を確認します。</p>
           </article>
         </div>
       </section>

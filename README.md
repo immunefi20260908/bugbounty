@@ -36,6 +36,8 @@ forge test -vv
 
 現在の Foundry テストでは、`VulnerableVault` の再入攻撃とフラッシュローン返済を確認できます。
 
+ポートフォリオの `Method` セクションでは、実装の順番を `Threat model -> State design -> Happy path -> Attack tests -> Fix and rerun` として紹介しています。
+
 ### テストコードの読み方
 
 1. `new MockJPYC()` でテスト用トークンを作る。

@@ -539,6 +539,41 @@ img {
   line-height: 1.9;
 }
 
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.method-card {
+  min-height: 250px;
+  padding: 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(17, 41, 61, 0.82), rgba(11, 28, 38, 0.72));
+}
+
+.method-number {
+  display: inline-flex;
+  margin-bottom: 30px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.method-card h3 {
+  margin: 0 0 12px;
+  font-size: 1.16rem;
+}
+
+.method-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+  font-size: 0.9rem;
+}
+
 .timeline {
   position: relative;
   display: grid;
@@ -648,7 +683,8 @@ img {
   .hero,
   .about-grid,
   .project-grid,
-  .skill-grid {
+  .skill-grid,
+  .method-grid {
     grid-template-columns: 1fr;
   }
 
