@@ -16,6 +16,7 @@ contract MockJPYC is ERC20 {
     // 例: 外部の誰でも mint(address, 1_000_000 ether) を呼べてしまう。
     // 本番トークンでは onlyOwner や AccessControl で発行者を限定する。
     function mint(address to, uint256 amount) external {
+        // 1. 指定された受取人へ新しい JPYC を発行する。
         _mint(to, amount);
     }
 }

